@@ -18,3 +18,10 @@ Claude.ai generate, Remix 2 example
 https://claude.ai
 
 ***
+### example
+
+* form4 : form edit, example
+* form5 : tanstack/react-table + form edit
+* form6: D1 database + form edit
+
+***

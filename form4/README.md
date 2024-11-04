@@ -12,6 +12,8 @@
 
 form edit, example
 
+* claude.ai generate , code fix
+
 ***
 ### Prompt
 

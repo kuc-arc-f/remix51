@@ -12,6 +12,8 @@
 
 D1 database + form edit
 
+* claude.ai generate , code fix
+
 ***
 ### workers + D1 database
 
