@@ -1,4 +1,6 @@
 import type { MetaFunction } from "@remix-run/node";
+import { LoaderFunction } from "@remix-run/node";
+import { requireUserSession, logout } from "@/utils/auth.server";
 
 import React from 'react';
 import { useState } from 'react';
@@ -15,6 +17,11 @@ import Head from '../components/Head';
 const todoSchema = z.object({
   text: z.string().min(2, "TODOは2文字以上で入力してください。")
 });
+
+export const loader: LoaderFunction = async ({ request }) => {
+  await requireUserSession(request);
+  return null;
+};
 
 const TodoApp = () => {
   const [todos, setTodos] = useState([]);

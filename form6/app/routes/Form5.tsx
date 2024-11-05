@@ -1,6 +1,8 @@
 // app/routes/todo.tsx
 import { json, type ActionArgs } from "@remix-run/node";
 import { useLoaderData, useActionData, useSubmit } from "@remix-run/react";
+import { LoaderFunction } from "@remix-run/node";
+import { requireUserSession, logout } from "@/utils/auth.server";
 import React from 'react';
 import { useState , useEffect } from "react";
 import { z } from "zod";
@@ -54,6 +56,11 @@ const todoSchema = z.object({
   qty2: z.string().min(1, "数量2を入力してください"),
   qty3: z.string().min(1, "数量3を入力してください"),
 });
+
+export const loader: LoaderFunction = async ({ request }) => {
+  await requireUserSession(request);
+  return null;
+};
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
