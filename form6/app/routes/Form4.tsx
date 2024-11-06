@@ -32,6 +32,22 @@ const todoSchema = z.object({
   qty2: z.string().min(1, "数量2を入力してください"),
   qty3: z.string().min(1, "数量3を入力してください"),
 });
+type TodoSchema = z.infer<typeof todoSchema>;
+interface Todo extends TodoSchema {
+  id: number;
+}
+const initialFormData = {
+  title: '',
+  content: '',
+  public: 'public',
+  food_orange: true,
+  food_apple: true,
+  food_banana: true,
+  pub_date: '',
+  qty1: '',
+  qty2: '',
+  qty3: '',
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   await requireUserSession(request);
@@ -80,7 +96,9 @@ export const action = async ({ request }: ActionArgs) => {
             }
             validationErrors[path].push(err.message);
           });
-          return json({ errors: validationErrors }, { status: 400 });
+          return json({ errors: validationErrors , data : data },
+             { status: 400 }
+          );
         }
       }
       return json({ error: "不明なエラーが発生しました" }, { status: 500 });
@@ -107,6 +125,8 @@ export default function TodoPage() {
   const submit = useSubmit();
   const actionData = useActionData<typeof action>();
   const [todos, setTodos] = useState<TodoData[]>([]);
+  const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
+  const [formData, setFormData] = useState<Todo>(initialFormData);
 
   useEffect(() => {
     const savedTodos = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -124,7 +144,10 @@ export default function TodoPage() {
   useEffect(() => {
     if(actionData){
       console.log(actionData);
-      //console.log(actionData?.errors);
+      if(actionData?.errors){
+        setFormData(actionData?.data);
+        console.log(actionData?.errors);
+      }
       if(actionData.success){
         if(actionData.action && actionData.action === "create"){
           console.log("#success.create");
@@ -159,6 +182,7 @@ export default function TodoPage() {
           saveStorage(out);
           location.reload();
         }
+        setCurrentTodo(null)
         setIsOpen(false);
       }
     }
@@ -166,18 +190,32 @@ export default function TodoPage() {
   const filteredTodos = todos.filter(todo => 
     todo.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const handleEdit = (todo: Todo) => {
+    //console.log(todo);
+    setCurrentTodo(todo);
+    setFormData(todo);
+    setIsOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setCurrentTodo(null);
+    //setErrors({});
+  };
+
   //
-  const TodoForm = ({ todo = null }) => (
+  const TodoForm = ({ todo = null, action = null  }) => (
     <form method="post" onSubmit={(e) => {
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      submit(formData, { method: "post" });
-      //setIsOpen(false);
+      const sendFormData = new FormData(e.currentTarget);
+      //console.log(sendFormData);
+      submit(sendFormData, { method: "post" });
     }}>
-      {/* <span>id={todo.id}</span> */}
-      <input type="hidden" name="_action" value={todo ? "edit" : "create"} />
-      {todo ? (
-        <input type="hidden" name="todo_id" value={todo.id} />
+      {/* JSON.stringify(formData) <span>id={todo.id}</span> (action !== "create")
+       */}
+      <input type="hidden" name="_action" value={currentTodo ? "edit" : "create"} />
+      {currentTodo ? (
+        <input type="hidden" name="todo_id" value={formData.id} />
       ) :null}
       
       <div className="space-y-4">
@@ -186,7 +224,7 @@ export default function TodoPage() {
           <Input
             id="title"
             name="title"
-            defaultValue={todo?.title}
+            defaultValue={formData?.title}
           />
         </div>
         {actionData?.errors?.title && (
@@ -198,7 +236,7 @@ export default function TodoPage() {
           <Input
             id="content"
             name="content"
-            defaultValue={todo?.content}
+            defaultValue={formData?.content}
           />
         </div>
         {actionData?.errors?.content && (
@@ -207,7 +245,7 @@ export default function TodoPage() {
         <div>
           <Label>公開設定</Label>
           {/* <RadioGroup defaultValue="public" name="public"> */}
-          <RadioGroup defaultValue={todo ? todo?.public: 'public'}
+          <RadioGroup defaultValue={formData?.public}
            name="public">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="public" id="public" />
@@ -225,17 +263,17 @@ export default function TodoPage() {
           <div className="flex space-x-4">
             <div className="flex items-center space-x-2">
               <Checkbox id="food_orange" name="food_orange" 
-              defaultChecked={todo ? todo?.food_orange: true} />
+              defaultChecked={formData?.food_orange} />
               <Label htmlFor="food_orange">オレンジ</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="food_apple" name="food_apple" 
-              defaultChecked={todo ? todo?.food_apple: true} />
+              defaultChecked={formData?.food_apple} />
               <Label htmlFor="food_apple">りんご</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="food_banana" name="food_banana" 
-              defaultChecked={todo ? todo?.food_banana: true} />
+              defaultChecked={formData?.food_banana} />
               <Label htmlFor="food_banana">バナナ</Label>
             </div>
           </div>
@@ -247,7 +285,7 @@ export default function TodoPage() {
             type="date"
             id="pub_date"
             name="pub_date"
-            defaultValue={todo?.pub_date}
+            defaultValue={formData?.pub_date}
           />
         </div>
 
@@ -255,10 +293,10 @@ export default function TodoPage() {
           {[1, 2, 3].map((num) => (
             <div key={num}>
               <Label htmlFor={`qty${num}`}>数量{num}</Label>
-              {todo ? (
+              {formData ? (
                 <Input
                 id={`qty${num}`} name={`qty${num}`}
-                defaultValue={todo?.[`qty${num}`]}
+                defaultValue={formData?.[`qty${num}`]}
                 />
               ) : (
                 <Input
@@ -276,7 +314,7 @@ export default function TodoPage() {
         </div>
 
         <Button type="submit">
-          {todo ? "更新" : "追加"}
+          {currentTodo ? "更新" : "追加"}
         </Button>
       </div>
     </form>
@@ -297,13 +335,16 @@ export default function TodoPage() {
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button>新規追加</Button>
+            <Button onClick={resetForm}>新規追加
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>TODO追加</DialogTitle>
+              <DialogTitle>
+                {currentTodo ? "Edit" : "Create"}
+              </DialogTitle>
             </DialogHeader>
-            <TodoForm />
+            <TodoForm action="create" />
           </DialogContent>
         </Dialog>
       </div>
@@ -314,25 +355,21 @@ export default function TodoPage() {
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{todo.title}</h3>
               <div className="space-x-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">編集</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>TODO編集</DialogTitle>
-                    </DialogHeader>
-                    <TodoForm todo={todo} />
-                  </DialogContent>
-                </Dialog>
+                <Button variant="outline"
+                  onClick={() => {
+                    handleEdit(todo);
+                  }}
+                >
+                  Edit
+                </Button>
                 
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    const formData = new FormData();
-                    formData.append("_action", "delete");
-                    formData.append("id", todo.id.toString());
-                    submit(formData, { method: "post" });
+                    const sendFormData = new FormData();
+                    sendFormData.append("_action", "delete");
+                    sendFormData.append("id", todo.id.toString());
+                    submit(sendFormData, { method: "post" });
                   }}
                 >
                   削除
