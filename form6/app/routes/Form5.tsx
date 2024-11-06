@@ -56,6 +56,22 @@ const todoSchema = z.object({
   qty2: z.string().min(1, "数量2を入力してください"),
   qty3: z.string().min(1, "数量3を入力してください"),
 });
+type TodoSchema = z.infer<typeof todoSchema>;
+interface Todo extends TodoSchema {
+  id: number;
+}
+const initialFormData = {
+  title: '',
+  content: '',
+  public: 'public',
+  food_orange: true,
+  food_apple: true,
+  food_banana: true,
+  pub_date: '',
+  qty1: '0',
+  qty2: '0',
+  qty3: '0',
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   await requireUserSession(request);
@@ -104,7 +120,9 @@ export const action = async ({ request }: ActionArgs) => {
             }
             validationErrors[path].push(err.message);
           });
-          return json({ errors: validationErrors }, { status: 400 });
+          return json({ errors: validationErrors , data : data },
+            { status: 400 }
+         );
         }
       }
       return json({ error: "不明なエラーが発生しました" }, { status: 500 });
@@ -142,6 +160,8 @@ export default function TodoPage() {
   const submit = useSubmit();
   const actionData = useActionData<typeof action>();
   const [todos, setTodos] = useState<TodoData[]>([]);
+  const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
+  const [formData, setFormData] = useState<Todo>(initialFormData);
   //
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
@@ -164,6 +184,10 @@ export default function TodoPage() {
     if(actionData){
       console.log(actionData);
       //console.log(actionData?.errors);
+      if(actionData?.errors){
+        setFormData(actionData?.data);
+        console.log(actionData?.errors);
+      }
       if(actionData.success){
         if(actionData.action && actionData.action === "create"){
           console.log("#success.create");
@@ -200,6 +224,7 @@ export default function TodoPage() {
           saveStorage(out);
           location.reload();
         }
+        setCurrentTodo(null)
         setIsOpen(false);
       }
     }
@@ -250,6 +275,7 @@ export default function TodoPage() {
         //flex gap-2 
         return (
         <div className="text-end">
+          {/*
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline"><Pencil className="h-4 w-4" /></Button>
@@ -261,6 +287,14 @@ export default function TodoPage() {
               <TodoForm todo={payment} />
             </DialogContent>
           </Dialog>
+          */}
+          <Button variant="outline"
+            onClick={() => {
+              handleEdit(payment);
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Button className="mx-2"
             variant="destructive" size="icon"
             onClick={() => {
@@ -302,19 +336,32 @@ export default function TodoPage() {
     }
   };
 
+  const handleEdit = (todo: Todo) => {
+    //console.log(todo);
+    setCurrentTodo(todo);
+    setFormData(todo);
+    setIsOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setCurrentTodo(null);
+    //setErrors({});
+  };
+
   const filteredTodos = todos.filter(todo => 
     todo.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
   //
-  const TodoForm = ({ todo = null }) => (
+  const TodoForm = ({ todo = null, action = null  }) => (
     <form method="post" onSubmit={(e) => {
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      submit(formData, { method: "post" });
+      const sendFormData = new FormData(e.currentTarget);
+      submit(sendFormData, { method: "post" });
     }}>
-      <input type="hidden" name="_action" value={todo ? "edit" : "create"} />
-      {todo ? (
-        <input type="hidden" name="todo_id" value={todo.id} />
+      <input type="hidden" name="_action" value={currentTodo ? "edit" : "create"} />
+      {currentTodo ? (
+        <input type="hidden" name="todo_id" value={formData.id} />
       ) :null}
       
       <div className="space-y-4">
@@ -323,7 +370,7 @@ export default function TodoPage() {
           <Input
             id="title"
             name="title"
-            defaultValue={todo?.title}
+            defaultValue={formData?.title}
           />
         </div>
         {actionData?.errors?.title && (
@@ -335,7 +382,7 @@ export default function TodoPage() {
           <Input
             id="content"
             name="content"
-            defaultValue={todo?.content}
+            defaultValue={formData?.content}
           />
         </div>
         {actionData?.errors?.content && (
@@ -343,7 +390,7 @@ export default function TodoPage() {
         )}
         <div>
           <Label>公開設定</Label>
-          <RadioGroup defaultValue={todo ? todo?.public: 'public'}
+          <RadioGroup defaultValue={formData?.public}
            name="public">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="public" id="public" />
@@ -361,17 +408,17 @@ export default function TodoPage() {
           <div className="flex space-x-4">
             <div className="flex items-center space-x-2">
               <Checkbox id="food_orange" name="food_orange" 
-              defaultChecked={todo ? todo?.food_orange: true} />
+              defaultChecked={formData?.food_orange} />
               <Label htmlFor="food_orange">オレンジ</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="food_apple" name="food_apple" 
-              defaultChecked={todo ? todo?.food_apple: true} />
+              defaultChecked={formData?.food_apple} />
               <Label htmlFor="food_apple">りんご</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="food_banana" name="food_banana" 
-              defaultChecked={todo ? todo?.food_banana: true} />
+              defaultChecked={formData?.food_banana} />
               <Label htmlFor="food_banana">バナナ</Label>
             </div>
           </div>
@@ -383,7 +430,7 @@ export default function TodoPage() {
             type="date"
             id="pub_date"
             name="pub_date"
-            defaultValue={todo?.pub_date}
+            defaultValue={formData?.pub_date}
           />
         </div>
 
@@ -391,10 +438,10 @@ export default function TodoPage() {
           {[1, 2, 3].map((num) => (
             <div key={num}>
               <Label htmlFor={`qty${num}`}>数量{num}</Label>
-              {todo ? (
+              {formData ? (
                 <Input
                 id={`qty${num}`} name={`qty${num}`}
-                defaultValue={todo?.[`qty${num}`]}
+                defaultValue={formData?.[`qty${num}`]}
                 />
               ) : (
                 <Input
@@ -412,7 +459,7 @@ export default function TodoPage() {
         </div>
 
         <Button type="submit">
-          {todo ? "更新" : "追加"}
+          {currentTodo ? "更新" : "追加"}
         </Button>
       </div>
     </form>
@@ -426,11 +473,13 @@ export default function TodoPage() {
       <div className="my-2 px-2 justify-between text-end">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button>新規追加</Button>
+            <Button onClick={resetForm}>新規追加
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>TODO追加</DialogTitle>
+              <DialogTitle>{currentTodo ? "Edit" : "Create"}
+              </DialogTitle>
             </DialogHeader>
             <TodoForm />
           </DialogContent>
