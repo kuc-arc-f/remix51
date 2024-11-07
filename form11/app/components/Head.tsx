@@ -9,6 +9,7 @@ function Page() {
         <a href="/form6" className="ms-2"> [ Form6 ]</a>
         <a href="/form10" className="ms-2"> [ Form10 ]</a>
         <a href="/form11" className="ms-2"> [ Form11 ]</a>
+        <a href="/form12" className="ms-2"> [ Form12 ]</a> 
         <br />
     </div>
     );
