@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -51,7 +52,7 @@ export function TodoDialog({ isOpen, onClose, onSubmit, initialData, mode }: Tod
   const submit = useSubmit();
   const actionData = useActionData<typeof action>();
   const inputRef = useRef<HTMLInputElement>(null);
-  //console.log(actionData);
+console.log(initialData); 
 
   useEffect(() => {
     if(actionData){
@@ -92,15 +93,23 @@ export function TodoDialog({ isOpen, onClose, onSubmit, initialData, mode }: Tod
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Add New Todo' : 'Edit Todo'}</DialogTitle>
-          <DialogDescription>
+  <>
+    <div>
+      <a href="/form12"> 
+        <Button variant="outline" className="mx-2">Back
+        </Button>
+      </a>
+    </div>
+    <Card className="w-full max-w-4xl mx-auto my-2" >
+      <CardHeader>
+        <CardTitle>
+          {mode === 'create' ? 'Add New Todo' : 'Edit Todo' }
+        </CardTitle>
+        <div>
             Fill in the details for your todo item.
-          </DialogDescription>
-        </DialogHeader>
-
+        </div>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="todo_id" defaultValue={initialData?.id} />
           <div className="grid grid-cols-2 gap-4">
@@ -131,7 +140,7 @@ export function TodoDialog({ isOpen, onClose, onSubmit, initialData, mode }: Tod
               <Input id="age" name="age" defaultValue={initialData?.age} />
             </div>
 
-            {/* Public/Private Radio */}
+            {/* Public/Private Radio */} 
             <div className="col-span-2 space-y-2">
               <Label>Visibility</Label>
               <RadioGroup defaultValue={initialData?.public ? 'true' : 'false'} name="public">
@@ -150,8 +159,10 @@ export function TodoDialog({ isOpen, onClose, onSubmit, initialData, mode }: Tod
             <div className="col-span-2 space-y-2">
               <Label>Food Preferences</Label>
               <div className="grid grid-cols-3 gap-2">
+                {/*  {initialData?.food_orange} */} 
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="food_orange" name="food_orange" defaultChecked={initialData?.food_orange} />
+                  <Checkbox id="food_orange" name="food_orange" 
+                   defaultChecked={initialData?.food_orange} />
                   <Label htmlFor="food_orange">Orange</Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -219,19 +230,23 @@ export function TodoDialog({ isOpen, onClose, onSubmit, initialData, mode }: Tod
               <Input id="text_option2" name="text_option2" defaultValue={initialData?.text_option2} />
             </div>
           </div>
-
-          <DialogFooter>
+ 
+          <div className="text-end">
+            {/* 
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" id="btn_submit">
+            */}
+            <Button type="submit" id="btn_submit" className="mx-2" >
               {mode === 'create' ? 'Add Todo' : 'Save Changes'}
             </Button>
-          </DialogFooter>
+          </div>  
         </form>
-      </DialogContent>
 
-    </Dialog>
+      </CardContent>
+    </Card> 
+  </>
+
 
   )
 }

@@ -145,6 +145,10 @@ console.log(data);
         </TableBody>
       </Table>
 
+    </div>
+  )
+}
+/*
       <TodoDialog
         isOpen={isDialogOpen}
         onClose={() => {
@@ -156,6 +160,4 @@ console.log(data);
         initialData={editingTodo}
         mode={editingTodo ? 'edit' : 'create'}
       />
-    </div>
-  )
-}
+ */

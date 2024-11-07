@@ -14,11 +14,16 @@ export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const searchParams = url.searchParams;
   const id = searchParams.get("id");
-  //itemId = Number(id);
 console.log("id=", id);
   const resulte = await CrudIndex.getList();
 //console.log(resulte);
-  return json({ data: resulte, id: id });
+  const target = resulte.filter(todo => todo.id === Number(id) );
+  let out = {};
+  if(target.length > 0) {
+    out = target[0];
+    console.log(out);
+  }
+  return json({ data: out, id: id });
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -78,20 +83,11 @@ export default function Index() {
 
   //console.log(data);
   console.log("id=", id);
-  useEffect(() => {
-    console.log(data);
-    const target = data.filter(todo => todo.id === Number(id) );
-    console.log(target);
-    if(target.length > 0) {
-      setEditingTodo(target[0]);
-    }
-    setIsDialogOpen(true);
-  }, []);
+  //useEffect(() => {
+  //  console.log(data);
+  //}, []);
   
   const handleEditTodo = (data: TodoData) => {
-    //const newTodos = [...todos]
-    //newTodos[editingIndex] = data
-    //setTodos(newTodos)
     setIsDialogOpen(false)
     setEditingTodo(undefined)
     setEditingIndex(-1)
@@ -101,7 +97,7 @@ export default function Index() {
   <>
     <Head />
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Form12</h1>
+      
       <TodoDialog
         isOpen={isDialogOpen}
         onClose={() => {
@@ -110,10 +106,11 @@ export default function Index() {
           //setEditingIndex(-1)
         }}
         onSubmit={handleEditTodo}
-        initialData={editingTodo}
+        initialData={data}
         mode={'edit'}
       />
     </div>
   </>
   )
 }
+//<h1 className="text-3xl font-bold mb-8">Form12</h1>

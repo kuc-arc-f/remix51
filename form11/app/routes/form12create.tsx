@@ -2,6 +2,7 @@ import { useState , useEffect } from "react";
 import { json, type ActionFunction } from "@remix-run/node";
 import { useLoaderData, useActionData, useSubmit } from "@remix-run/react";
 import { LoaderFunction } from "@remix-run/node";
+import { Button } from "@/components/ui/button";
 import { requireUserSession, logout } from "@/utils/auth.server";
 import { TodoList } from "./form12/TodoList"
 import { todoSchema } from "./form12/todo-validation";
@@ -78,8 +79,7 @@ export default function Index() {
   <>
     <Head />
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Form12 Create</h1>
-      <TodoDialog
+      <TodoDialog className=""
         isOpen={isDialogOpen}
         onClose={() => {
           setIsDialogOpen(false)
@@ -94,3 +94,12 @@ export default function Index() {
   </>
   )
 }
+/*
+<h1 className="text-3xl font-bold mb-8">Form12 Create</h1>
+<div>
+  <a href="/form12">
+    <Button variant="outline" className="mx-2">Back
+    </Button>
+  </a>
+</div>
+*/
