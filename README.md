@@ -24,5 +24,6 @@ https://claude.ai
 * form5 : tanstack/react-table + form edit
 * form6: D1 database + form edit
 * form11: D1 database + form edit
+* plan1: Schedule , Claude.ai generate
 
 ***
