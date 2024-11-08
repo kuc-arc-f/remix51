@@ -18,37 +18,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import Head from '../components/Head';
-
-// Zodスキーマの定義
-const todoSchema = z.object({
-  title: z.string().min(2, "タイトルは2文字以上で入力してください"),
-  content: z.string().min(1, "内容を入力してください"),
-  public: z.enum(["public", "private"]),
-  food_orange: z.boolean().optional(),
-  food_apple: z.boolean().optional(),
-  food_banana: z.boolean().optional(),
-  pub_date: z.string(),
-  qty1: z.string().min(1, "数量1を入力してください"),
-  qty2: z.string().min(1, "数量2を入力してください"),
-  qty3: z.string().min(1, "数量3を入力してください"),
-});
-type TodoSchema = z.infer<typeof todoSchema>;
-interface Todo extends TodoSchema {
-  id: number;
-}
-const initialFormData = {
-  title: '',
-  content: '',
-  public: 'public',
-  food_orange: true,
-  food_apple: true,
-  food_banana: true,
-  pub_date: '',
-  qty1: '',
-  qty2: '',
-  qty3: '',
-};
-
+import {
+  TodoSchema , Todo , todoSchema , initialFormData
+} from  "./Form4/Schema";
+import TodoForm from "./Form4/TodoForm";
+//
 export const loader: LoaderFunction = async ({ request }) => {
   await requireUserSession(request);
   return null;
@@ -76,7 +50,6 @@ export const action = async ({ request }: ActionArgs) => {
 
     try {
       const validated = todoSchema.parse(data);
-      // ここでデータベースへの保存処理を行う
       if (action === "create") {
         return json({ success: true , action: "create", data: data, });
       }else{
@@ -97,10 +70,11 @@ export const action = async ({ request }: ActionArgs) => {
             validationErrors[path].push(err.message);
           });
           return json({ errors: validationErrors , data : data },
-             { status: 400 }
+            { status: 400 }
           );
         }
       }
+      console.log(error);
       return json({ error: "不明なエラーが発生しました" }, { status: 500 });
     }
 
@@ -108,7 +82,6 @@ export const action = async ({ request }: ActionArgs) => {
 
   if (action === "delete") {
     const id = formData.get("id");
-    // ここで削除処理を実装
     return json({ success: true, action: "delete", id: Number(id), });
   }
 
@@ -187,6 +160,7 @@ export default function TodoPage() {
       }
     }
   }, [actionData]);
+
   const filteredTodos = todos.filter(todo => 
     todo.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -202,123 +176,6 @@ export default function TodoPage() {
     setCurrentTodo(null);
     //setErrors({});
   };
-
-  //
-  const TodoForm = ({ todo = null, action = null  }) => (
-    <form method="post" onSubmit={(e) => {
-      e.preventDefault();
-      const sendFormData = new FormData(e.currentTarget);
-      //console.log(sendFormData);
-      submit(sendFormData, { method: "post" });
-    }}>
-      {/* JSON.stringify(formData) <span>id={todo.id}</span> (action !== "create")
-       */}
-      <input type="hidden" name="_action" value={currentTodo ? "edit" : "create"} />
-      {currentTodo ? (
-        <input type="hidden" name="todo_id" value={formData.id} />
-      ) :null}
-      
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="title">タイトル</Label>
-          <Input
-            id="title"
-            name="title"
-            defaultValue={formData?.title}
-          />
-        </div>
-        {actionData?.errors?.title && (
-          <div className="text-red-400">{actionData?.errors?.title[0]}</div>
-        )}
-
-        <div>
-          <Label htmlFor="content">内容</Label>
-          <Input
-            id="content"
-            name="content"
-            defaultValue={formData?.content}
-          />
-        </div>
-        {actionData?.errors?.content && (
-          <div className="text-red-400">{actionData?.errors?.content[0]}</div>
-        )}
-        <div>
-          <Label>公開設定</Label>
-          {/* <RadioGroup defaultValue="public" name="public"> */}
-          <RadioGroup defaultValue={formData?.public}
-           name="public">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="public" id="public" />
-              <Label htmlFor="public">公開</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="private" id="private" />
-              <Label htmlFor="private">非公開</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <div className="space-y-2">
-          <Label>フルーツ選択</Label>
-          <div className="flex space-x-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="food_orange" name="food_orange" 
-              defaultChecked={formData?.food_orange} />
-              <Label htmlFor="food_orange">オレンジ</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="food_apple" name="food_apple" 
-              defaultChecked={formData?.food_apple} />
-              <Label htmlFor="food_apple">りんご</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="food_banana" name="food_banana" 
-              defaultChecked={formData?.food_banana} />
-              <Label htmlFor="food_banana">バナナ</Label>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="pub_date">公開日</Label>
-          <Input
-            type="date"
-            id="pub_date"
-            name="pub_date"
-            defaultValue={formData?.pub_date}
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((num) => (
-            <div key={num}>
-              <Label htmlFor={`qty${num}`}>数量{num}</Label>
-              {formData ? (
-                <Input
-                id={`qty${num}`} name={`qty${num}`}
-                defaultValue={formData?.[`qty${num}`]}
-                />
-              ) : (
-                <Input
-                id={`qty${num}`} name={`qty${num}`}
-                defaultValue={0}
-                />
-              )}
-            {actionData?.errors?.[`qty${num}`] && (
-              <div className="text-red-400">{actionData?.errors?.[`qty${num}`]}
-              </div>
-            )}
-            </div>
-
-          ))}
-        </div>
-
-        <Button type="submit">
-          {currentTodo ? "更新" : "追加"}
-        </Button>
-      </div>
-    </form>
-  );
 
   return (
   <>
@@ -344,7 +201,8 @@ export default function TodoPage() {
                 {currentTodo ? "Edit" : "Create"}
               </DialogTitle>
             </DialogHeader>
-            <TodoForm action="create" />
+            <TodoForm action="create" currentTodo={currentTodo}
+            formData={formData} actionData={actionData} />
           </DialogContent>
         </Dialog>
       </div>
