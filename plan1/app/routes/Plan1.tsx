@@ -1,201 +1,259 @@
 import React, { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus } from 'lucide-react';
 
-const Calendar = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [schedules, setSchedules] = useState([]);
+const ScheduleCalendar = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [schedules, setSchedules] = useState({});
+  const [selectedDate, setSelectedDate] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState(null);
   const [formData, setFormData] = useState({
     date: '',
     content: '',
-    datetime_1: '',
-    datetime_content1: '',
-    datetime_2: '',
-    datetime_content2: '',
-    datetime_3: '',
-    datetime_content3: '',
-    datetime_4: '',
-    datetime_content4: '',
-    datetime_5: '',
-    datetime_content5: '',
+    time_1: '', content_1: '',
+    time_2: '', content_2: '',
+    time_3: '', content_3: '',
+    time_4: '', content_4: '',
+    time_5: '', content_5: ''
   });
 
-  const monthStart = startOfMonth(selectedDate);
-  const monthEnd = endOfMonth(selectedDate);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  const handlePrevMonth = () => {
-    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1));
-  };
-
-  const handleNextMonth = () => {
-    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1));
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingSchedule) {
-      setSchedules(schedules.map(schedule => 
-        schedule.id === editingSchedule.id ? { ...formData, id: editingSchedule.id } : schedule
-      ));
-    } else {
-      setSchedules([...schedules, { ...formData, id: Date.now() }]);
+  // カレンダーの日付を生成
+  const generateCalendarDates = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const result = [];
+    const firstDayOfWeek = firstDay.getDay();
+    
+    // 前月の日付を追加
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      const prevDate = new Date(year, month, -i);
+      result.unshift({
+        date: prevDate,
+        isCurrentMonth: false
+      });
     }
-    setIsDialogOpen(false);
-    setEditingSchedule(null);
-    setFormData({
-      date: '',
-      content: '',
-      datetime_1: '',
-      datetime_content1: '',
-      datetime_2: '',
-      datetime_content2: '',
-      datetime_3: '',
-      datetime_content3: '',
-      datetime_4: '',
-      datetime_content4: '',
-      datetime_5: '',
-      datetime_content5: '',
-    });
+    
+    // 当月の日付を追加
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      result.push({
+        date: new Date(year, month, i),
+        isCurrentMonth: true
+      });
+    }
+    
+    // 次月の日付を追加
+    const remainingDays = 42 - result.length;
+    for (let i = 1; i <= remainingDays; i++) {
+      result.push({
+        date: new Date(year, month + 1, i),
+        isCurrentMonth: false
+      });
+    }
+    
+    return result;
   };
 
-  const handleEdit = (schedule) => {
-    setEditingSchedule(schedule);
-    setFormData(schedule);
+  // 月を変更
+  const changeMonth = (offset) => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
+  };
+
+  // 日付を選択してダイアログを開く
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    const dateStr = date.toISOString().split('T')[0];
+    if (schedules[dateStr]) {
+      setFormData(schedules[dateStr]);
+    } else {
+      setFormData({
+        date: dateStr,
+        content: '',
+        time_1: '', content_1: '',
+        time_2: '', content_2: '',
+        time_3: '', content_3: '',
+        time_4: '', content_4: '',
+        time_5: '', content_5: ''
+      });
+    }
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
-    setSchedules(schedules.filter(schedule => schedule.id !== id));
+  // フォームの送信
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const dateStr = formData.date;
+    setSchedules(prev => ({
+      ...prev,
+      [dateStr]: formData
+    }));
+    setIsDialogOpen(false);
+  };
+
+  // スケジュールの削除
+  const handleDelete = () => {
+    if (!selectedDate) return;
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const newSchedules = { ...schedules };
+    delete newSchedules[dateStr];
+    setSchedules(newSchedules);
+    setIsDialogOpen(false);
+    setSelectedDate(null);
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <Button onClick={handlePrevMonth}>&lt;</Button>
-        <h2 className="text-xl font-bold">
-          {format(selectedDate, 'yyyy年 MM月', { locale: ja })}
-        </h2>
-        <Button onClick={handleNextMonth}>&gt;</Button>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {['日', '月', '火', '水', '木', '金', '土'].map(day => (
-          <div key={day} className="p-2 text-center font-bold border">
-            {day}
+    <div className="max-w-6xl mx-auto p-4">
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <Button variant="outline" onClick={() => changeMonth(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-xl font-semibold">
+              {currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月
+            </h2>
+            <Button variant="outline" onClick={() => changeMonth(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        ))}
-        
-        {days.map(day => {
-          const daySchedules = schedules.filter(schedule => 
-            isSameDay(new Date(schedule.date), day)
-          );
-          
-          return (
-            <div
-              key={day.toString()}
-              className={`p-2 border min-h-24 ${
-                !isSameMonth(day, selectedDate) ? 'bg-gray-100' : ''
-              }`}
-            >
-              <div className="text-right">{format(day, 'd')}</div>
-              {daySchedules.map(schedule => (
-                <div key={schedule.id} className="mt-1">
-                  <div className="bg-blue-100 p-1 text-sm rounded">
-                    <div>{schedule.content}</div>
-                    <div className="flex gap-2 mt-1">
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(schedule)}
-                      >
-                        編集
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(schedule.id)}
-                      >
-                        削除
-                      </Button>
+
+          <div className="grid grid-cols-7 gap-1">
+            {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
+              <div
+                key={day}
+                className={`p-2 text-center font-medium ${
+                  index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : ''
+                }`}
+              >
+                {day}
+              </div>
+            ))}
+
+            {generateCalendarDates().map((item, index) => {
+              const dateStr = item.date.toISOString().split('T')[0];
+              const hasSchedule = schedules[dateStr];
+              return (
+                <div
+                  key={index}
+                  className={`relative p-2 border min-h-24 cursor-pointer hover:bg-gray-50 ${
+                    item.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                  onClick={() => handleDateSelect(item.date)}
+                >
+                  <div
+                    className={`text-right ${
+                      item.date.getDay() === 0
+                        ? 'text-red-500'
+                        : item.date.getDay() === 6
+                        ? 'text-blue-500'
+                        : ''
+                    }`}
+                  >
+                    {item.date.getDate()}
+                  </div>
+                  {hasSchedule && (
+                    <div className="mt-1 text-xs bg-blue-100 p-1 rounded">
+                      {hasSchedule.content}
                     </div>
+                  )}
+                  {item.isCurrentMonth && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute bottom-1 right-1 h-6 w-6 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDateSelect(item.date);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDate && selectedDate.toLocaleDateString('ja-JP')} の予定
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">内容</label>
+                <Textarea
+                  placeholder="予定の内容を入力"
+                  value={formData.content}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, content: e.target.value }))
+                  }
+                />
+              </div>
+
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={num} className="space-y-2">
+                  <label className="text-sm font-medium">予定 {num}</label>
+                  <div className="flex space-x-2">
+                    <Input
+                      type="time"
+                      value={formData[`time_${num}`]}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          [`time_${num}`]: e.target.value
+                        }))
+                      }
+                      className="w-32"
+                    />
+                    <Textarea
+                      placeholder={`内容 ${num}`}
+                      value={formData[`content_${num}`]}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          [`content_${num}`]: e.target.value
+                        }))
+                      }
+                      className="flex-1"
+                    />
                   </div>
                 </div>
               ))}
             </div>
-          );
-        })}
-      </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button className="mt-4">新規予定追加</Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSchedule ? '予定を編集' : '新規予定追加'}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block mb-1">日付</label>
-              <Input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <label className="block mb-1">内容</label>
-              <Textarea
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            {[1, 2, 3, 4, 5].map(num => (
-              <div key={num} className="space-y-2">
-                <div>
-                  <label className="block mb-1">日時 {num}</label>
-                  <Input
-                    type="datetime-local"
-                    name={`datetime_${num}`}
-                    value={formData[`datetime_${num}`]}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1">内容 {num}</label>
-                  <Textarea
-                    name={`datetime_content${num}`}
-                    value={formData[`datetime_content${num}`]}
-                    onChange={handleInputChange}
-                  />
-                </div>
+            <DialogFooter className="flex justify-between">
+              <div className="flex space-x-2">
+                {schedules[formData.date] && (
+                  <Button type="button" variant="destructive" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    削除
+                  </Button>
+                )}
               </div>
-            ))}
-            <Button type="submit">
-              {editingSchedule ? '更新' : '追加'}
-            </Button>
+              <div className="flex space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  キャンセル
+                </Button>
+                <Button type="submit">
+                  <Edit className="h-4 w-4 mr-2" />
+                  {schedules[formData.date] ? '更新' : '保存'}
+                </Button>
+              </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -203,4 +261,4 @@ const Calendar = () => {
   );
 };
 
-export default Calendar;
+export default ScheduleCalendar;
