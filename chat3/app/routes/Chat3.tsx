@@ -279,7 +279,7 @@ console.log("#handleAddReply");
       </div>
 
       <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>返信を追加</DialogTitle>
           </DialogHeader>
