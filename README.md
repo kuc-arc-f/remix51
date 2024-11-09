@@ -6,7 +6,7 @@
 
  date :  2024/11/02
 
- update  : 2024/11/09  
+ update  : 2024/11/09
 
 ***
 
@@ -25,7 +25,8 @@ https://claude.ai
 * form6: D1 database + form edit
 * form11: D1 database + form edit
 * plan1: Schedule , Claude.ai generate
-* plan2: D1 datase , data save
+* plan2: D1 database , data save
 * chat2: chat , Claude.ai generate
+* chat3: D1 database , data save
 
 ***
