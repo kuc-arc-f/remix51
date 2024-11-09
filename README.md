@@ -30,3 +30,7 @@ https://claude.ai
 * chat3: D1 database , data save
 
 ***
+# License
+
+* MIT
+***
