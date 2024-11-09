@@ -26,5 +26,6 @@ https://claude.ai
 * form11: D1 database + form edit
 * plan1: Schedule , Claude.ai generate
 * plan2: D1 datase , data save
+* chat2: chat , Claude.ai generate
 
 ***
