@@ -283,15 +283,45 @@ console.log("#handleAddReply");
           <DialogHeader>
             <DialogTitle>返信を追加</DialogTitle>
           </DialogHeader>
-          <div className="my-4">
+          <div className="my-0">
             <Textarea
               placeholder="返信内容を入力してください"
               value={newReply}
               onChange={(e) => setNewReply(e.target.value)}
             />
           </div>
-          <DialogFooter>
+          <div className="text-end">
             <Button onClick={handleAddReply}>返信する</Button>
+          </div>
+          {selectedPost && selectedPost.replies.length > 0 && (
+            <div className="border-t p-4">
+              <div className="space-y-2">
+                {selectedPost.replies.map(reply => (
+                  <div
+                    key={reply.id}
+                    className="ml-6 p-2 bg-gray-50 rounded-lg flex justify-between items-start"
+                  >
+                    <div>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {reply.content}
+                      </p>
+                      <span className="text-xs text-gray-500">
+                        {reply.timestamp}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
           </DialogFooter>
         </DialogContent>
       </Dialog>
