@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
+import { json, type ActionArgs } from "@remix-run/node";
+import { useLoaderData, useActionData, useSubmit } from "@remix-run/react";
+import { LoaderFunction } from "@remix-run/node";
+import { requireUserSession, logout } from "@/utils/auth.server";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +10,70 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, Edit, Trash2, Plus } from 'lucide-react';
 import Head from '../components/Head';
+import CrudIndex from "./Plan2/CrudIndex";
 
+export const loader: LoaderFunction = async ({ request }) => {
+  await requireUserSession(request);
+  const resulte = await CrudIndex.getList();
+//console.log(resulte);
+  return json({ data: resulte });
+};
+
+export const action = async ({ request }: ActionArgs) => {
+  const formData = await request.formData();
+  const data = Object.fromEntries(formData);
+  console.log(data);
+  const action = formData.get("_action");
+  console.log("action=", action);
+
+  if (action === "create" || action === "edit") {
+    try {
+      if (action === "create") {
+        const result = await CrudIndex.addItem(data);
+        console.log(result)
+
+        return json({ success: true , action: "create", data: data, });
+      }else{
+        console.log("edit.id=", data.id);
+        const result = await CrudIndex.update(data, Number(data.id));
+        console.log(result)
+        return json({
+          success: true, action: "edit", data: data, id: 0 
+        });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        if (error instanceof z.ZodError) {
+          const validationErrors: ValidationErrors = {};
+          error.errors.forEach((err) => {
+            const path = err.path[0] as string;
+            if (!validationErrors[path]) {
+              validationErrors[path] = [];
+            }
+            validationErrors[path].push(err.message);
+          });
+          return json({ errors: validationErrors , data : data },
+            { status: 400 }
+          );
+        }
+      }
+      console.log(error);
+      return json({ error: "不明なエラーが発生しました" }, { status: 500 });
+    }
+  }
+  if (action === "delete") {
+    const id = formData.get("id");
+    console.log("#action.delete.id", id);
+    const result = await CrudIndex.delete(Number(id));
+    console.log(result);
+    return json({ success: true, action: "delete", id: 0, });
+  }
+  return json({ error: "Invalid action" }, { status: 400 });
+};
+//
 const ScheduleCalendar = () => {
+  const submit = useSubmit();
+  const { data } = useLoaderData<typeof loader>();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
@@ -21,6 +87,15 @@ const ScheduleCalendar = () => {
     time_4: '', content_4: '',
     time_5: '', content_5: ''
   });
+  useEffect(() => {
+    console.log(data);
+    const target = {};
+    data.forEach((row: any) => {
+      target[row.date] = row;
+    });
+    //console.log(target);
+    setSchedules(target);
+  }, []);
 
   // カレンダーの日付を生成
   const generateCalendarDates = () => {
@@ -71,6 +146,7 @@ const ScheduleCalendar = () => {
   const handleDateSelect = (date) => {
     setSelectedDate(date);
     const dateStr = date.toISOString().split('T')[0];
+    console.log("handleDateSelect.dateStr=", dateStr);
     if (schedules[dateStr]) {
       setFormData(schedules[dateStr]);
     } else {
@@ -91,18 +167,49 @@ const ScheduleCalendar = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const dateStr = formData.date;
+console.log("dateStr=", dateStr);
+    //
+    if(!schedules[dateStr]) {
+      const sendFormData = new FormData(e.currentTarget);
+      sendFormData.append("_action", "create");
+      sendFormData.append("date", dateStr);
+      submit(sendFormData, { method: "post" });
+    }else{
+      const target = schedules[dateStr];
+      //console.log(target);
+      const sendFormData = new FormData(e.currentTarget);
+      sendFormData.append("_action", "edit");
+      sendFormData.append("date", dateStr);
+      sendFormData.append("id", target.id );
+      submit(sendFormData, { method: "post" });
+    }
+
     setSchedules(prev => ({
       ...prev,
       [dateStr]: formData
     }));
+
+
     setIsDialogOpen(false);
   };
 
   // スケジュールの削除
   const handleDelete = () => {
     if (!selectedDate) return;
+    const confirmed = window.confirm('Delete OK ？'); 
+    if (!confirmed) { return; }
     const dateStr = selectedDate.toISOString().split('T')[0];
     const newSchedules = { ...schedules };
+    //
+    const target = newSchedules[dateStr];
+    console.log("#handleDelete");
+    console.log(target);
+    const sendFormData = new FormData();
+    sendFormData.append("_action", "delete");
+    sendFormData.append("date", dateStr);
+    sendFormData.append("id", target.id);
+    submit(sendFormData, { method: "post" });
+    //
     delete newSchedules[dateStr];
     setSchedules(newSchedules);
     setIsDialogOpen(false);
@@ -113,7 +220,7 @@ const ScheduleCalendar = () => {
   <>
     <Head />
     <div className="max-w-6xl mx-auto p-4">
-    <h1 className="text-4xl font-bold">Plan1</h1>
+    <h1 className="text-4xl font-bold">Plan2</h1>
       <Card>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -196,12 +303,17 @@ const ScheduleCalendar = () => {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/*
+            <input tye="text" name="date" 
+            value={selectedDate && selectedDate.toLocaleDateString('ja-JP')} />
+            */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">内容</label>
                 <Textarea
                   placeholder="予定の内容を入力"
                   value={formData.content}
+                  name="content"
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, content: e.target.value }))
                   }
@@ -214,6 +326,7 @@ const ScheduleCalendar = () => {
                   <div className="flex space-x-2">
                     <Input
                       type="time"
+                      name={`time_${num}`}
                       value={formData[`time_${num}`]}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -225,6 +338,7 @@ const ScheduleCalendar = () => {
                     />
                     <Textarea
                       placeholder={`内容 ${num}`}
+                      name={`content_${num}`}
                       value={formData[`content_${num}`]}
                       onChange={(e) =>
                         setFormData((prev) => ({

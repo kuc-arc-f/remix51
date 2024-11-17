@@ -161,6 +161,7 @@ export default function TodoPage() {
   const actionData = useActionData<typeof action>();
   const [todos, setTodos] = useState<TodoData[]>([]);
   const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState<Todo>(initialFormData);
   //
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -186,6 +187,7 @@ export default function TodoPage() {
       //console.log(actionData?.errors);
       if(actionData?.errors){
         setFormData(actionData?.data);
+        setErrors(actionData?.errors);
         console.log(actionData?.errors);
       }
       if(actionData.success){
@@ -275,19 +277,6 @@ export default function TodoPage() {
         //flex gap-2 
         return (
         <div className="text-end">
-          {/*
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline"><Pencil className="h-4 w-4" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>TODO編集</DialogTitle>
-              </DialogHeader>
-              <TodoForm todo={payment} />
-            </DialogContent>
-          </Dialog>
-          */}
           <Button variant="outline"
             onClick={() => {
               handleEdit(payment);
@@ -338,6 +327,7 @@ export default function TodoPage() {
 
   const handleEdit = (todo: Todo) => {
     //console.log(todo);
+    setErrors({});
     setCurrentTodo(todo);
     setFormData(todo);
     setIsOpen(true);
@@ -346,7 +336,7 @@ export default function TodoPage() {
   const resetForm = () => {
     setFormData(initialFormData);
     setCurrentTodo(null);
-    //setErrors({});
+    setErrors({});
   };
 
   const filteredTodos = todos.filter(todo => 
@@ -373,8 +363,9 @@ export default function TodoPage() {
             defaultValue={formData?.title}
           />
         </div>
-        {actionData?.errors?.title && (
-          <div className="text-red-400">{actionData?.errors?.title[0]}</div>
+        
+        {errors?.title && (
+          <div className="text-red-400">{errors?.title[0]}</div>
         )}
 
         <div>
@@ -385,8 +376,8 @@ export default function TodoPage() {
             defaultValue={formData?.content}
           />
         </div>
-        {actionData?.errors?.content && (
-          <div className="text-red-400">{actionData?.errors?.content[0]}</div>
+        {errors?.content && (
+          <div className="text-red-400">{errors?.content[0]}</div>
         )}
         <div>
           <Label>公開設定</Label>
@@ -449,8 +440,8 @@ export default function TodoPage() {
                 defaultValue={0}
                 />
               )}
-            {actionData?.errors?.[`qty${num}`] && (
-              <div className="text-red-400">{actionData?.errors?.[`qty${num}`]}
+            {errors?.[`qty${num}`] && (
+              <div className="text-red-400">{errors?.[`qty${num}`]}
               </div>
             )}
             </div>
