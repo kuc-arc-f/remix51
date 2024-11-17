@@ -1,4 +1,3 @@
-// app/models/todo.server.ts
 import { z } from "zod";
 
 export const TodoSchema = z.object({
@@ -12,8 +11,7 @@ export type Todo = z.infer<typeof TodoSchema>;
 // app/routes/_index.tsx
 import { json, type ActionFunction, type LoaderFunction } from "@remix-run/node";
 import { useLoaderData, useActionData, Form } from "@remix-run/react";
-import { useState } from "react";
-//import { TodoSchema, type Todo } from "~/models/todo.server";
+import { useState , useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import Head from '../components/Head';
+import FormDialog from './form13/FormDialog';
 
 // Todosデータのモックストレージをサーバーサイドでシミュレート
 let TODOS: Todo[] = [];
@@ -39,6 +39,7 @@ interface ActionData {
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const action = formData.get("_action");
+console.log("action=", action);
 
   if (action === "create" || action === "edit") {
     const title = formData.get("title");
@@ -61,14 +62,14 @@ export const action: ActionFunction = async ({ request }) => {
     if (action === "create") {
       const newTodo = { ...result.data, id: Date.now() };
       TODOS.push(newTodo);
-      return json({ todo: newTodo });
+      return json({ todo: newTodo, success: true, });
     } else {
       TODOS = TODOS.map((todo) =>
         todo.id === parseInt(id!.toString())
           ? { ...result.data, id: parseInt(id!.toString()) }
           : todo
       );
-      return json({ todo: result.data });
+      return json({ todo: result.data , success: true, });
     }
   }
 
@@ -86,11 +87,37 @@ export const loader: LoaderFunction = async () => {
 };
 
 export default function Index() {
+  const [errors, setErrors] = useState({});
   const { todos } = useLoaderData<{ todos: Todo[] }>();
   const actionData = useActionData<ActionData>();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+
+  useEffect(() => {
+    if(actionData){
+      console.log(actionData);
+      if(actionData.success){
+        setEditingTodo(null);
+        setIsAddDialogOpen(false);
+      }
+      if(actionData?.errors){
+        setErrors(actionData?.errors);
+        console.log(actionData?.errors);
+      }
+    }
+  }, [actionData]);
+
+  const resetForm = () => {
+    setEditingTodo(null);
+    setErrors({});
+  };
+
+  const handleEdit = (todo: Todo) => {
+    //console.log(todo);
+    setErrors({});
+    setEditingTodo(todo);
+  };
 
   const filteredTodos = todos.filter(
     (todo) =>
@@ -99,6 +126,8 @@ export default function Index() {
   );
 
   return (
+  <>
+    <Head />
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">TODO App</h1>
       
@@ -119,40 +148,17 @@ export default function Index() {
       {/* 追加ダイアログ */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogTrigger asChild>
-          <Button className="mb-4">Add New TODO</Button>
+          <Button className="mb-4" onClick={()=>{resetForm()}}>Add New TODO</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New TODO</DialogTitle>
           </DialogHeader>
-          <Form method="post" className="grid gap-4">
-            <input type="hidden" name="_action" value="create" />
-            <div>
-              <Input
-                name="title"
-                placeholder="Title"
-                defaultValue=""
-              />
-              {actionData?.errors?.title && (
-                <div className="text-red-500 text-sm mt-1">
-                  {actionData.errors.title}
-                </div>
-              )}
-            </div>
-            <div>
-              <Input
-                name="content"
-                placeholder="Content"
-                defaultValue=""
-              />
-              {actionData?.errors?.content && (
-                <div className="text-red-500 text-sm mt-1">
-                  {actionData.errors.content}
-                </div>
-              )}
-            </div>
-            <Button type="submit">Add</Button>
-          </Form>
+          <FormDialog 
+          mode="create"
+          editingTodo={null}
+          errors={errors} 
+          />
         </DialogContent>
       </Dialog>
 
@@ -163,35 +169,11 @@ export default function Index() {
             <DialogTitle>Edit TODO</DialogTitle>
           </DialogHeader>
           {editingTodo && (
-            <Form method="post" className="grid gap-4">
-              <input type="hidden" name="_action" value="edit" />
-              <input type="hidden" name="id" value={editingTodo.id} />
-              <div>
-                <Input
-                  name="title"
-                  placeholder="Title"
-                  defaultValue={editingTodo.title}
-                />
-                {actionData?.errors?.title && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {actionData.errors.title}
-                  </div>
-                )}
-              </div>
-              <div>
-                <Input
-                  name="content"
-                  placeholder="Content"
-                  defaultValue={editingTodo.content}
-                />
-                {actionData?.errors?.content && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {actionData.errors.content}
-                  </div>
-                )}
-              </div>
-              <Button type="submit">Save</Button>
-            </Form>
+            <FormDialog 
+            mode="edit"
+            errors={errors} 
+            editingTodo={editingTodo}
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -210,7 +192,7 @@ export default function Index() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setEditingTodo(todo)}
+                onClick={() => handleEdit(todo)}
               >
                 Edit
               </Button>
@@ -228,6 +210,8 @@ export default function Index() {
           </div>
         ))}
       </div>
-    </div>
+    </div>  
+  </>
+
   );
 }
