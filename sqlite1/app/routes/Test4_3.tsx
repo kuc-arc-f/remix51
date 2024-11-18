@@ -6,7 +6,7 @@ export const todoSchema = z.object({
 export type TodoSchema = z.infer<typeof todoSchema>;
 
 // app/routes/_index.tsx
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, Plus, Pencil, Trash2 } from "lucide-react";
-//import { todoSchema } from "~/schemas/todo.server";
 import * as TodoModel from "../models/Test4_3/todo.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const todos = await TodoModel.getTodos();
-  return json({ todos });
+  const data = await TodoModel.getTodos();
+  return json({ data });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -76,7 +75,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Index() {
-  const { todos } = useLoaderData<typeof loader>();
+  const { data } = useLoaderData<typeof loader>();
+  const [todos, setTodos] = useState([]);
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -93,6 +93,9 @@ export default function Index() {
     todo.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    setTodos(data);
+  }, []);  
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">TODO App</h1>
