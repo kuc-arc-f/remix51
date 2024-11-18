@@ -6,7 +6,7 @@
 
  date :  2024/11/02
 
- update  : 2024/11/17 
+ update  : 2024/11/18 
 
 ***
 
@@ -28,6 +28,7 @@ https://claude.ai
 * plan2: D1 database , data save
 * chat2: chat , Claude.ai generate
 * chat3: D1 database , data save
+* sqlite1: sqlite example
 
 ***
 # License
