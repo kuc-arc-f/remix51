@@ -29,6 +29,7 @@ https://claude.ai
 * chat2: chat , Claude.ai generate
 * chat3: D1 database , data save
 * sqlite1: sqlite example
+* workers4: workers + D1 database
 
 ***
 # License
