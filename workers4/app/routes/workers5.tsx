@@ -50,6 +50,7 @@ import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Checkbox } from "~/components/ui/checkbox";
 import { toast } from "~/components/ui/use-toast";
+import Head from '../components/Head';
 
 const API_BASE = import.meta.env.VITE_WORKERS_URL + "/api";
 
@@ -310,6 +311,8 @@ export default function Index() {
   );
 
   return (
+  <>
+    <Head />
     <div className="container mx-auto py-8">
       <div className="mb-8 space-y-4">
         <div className="flex justify-between items-center">
@@ -374,5 +377,7 @@ export default function Index() {
         </DialogContent>
       </Dialog>
     </div>
+  </>
+
   );
 }
